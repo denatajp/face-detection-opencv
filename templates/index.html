@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face & Smile Detection | Real-time</title>
+    
+    <!-- Font Awesome untuk ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- File CSS utama -->
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Bagian Header -->
+        <header>
+            <div class="logo">
+                <i class="fas fa-camera"></i>
+            </div>
+            <h1>Deteksi Wajah & Senyuman Secara Real-Time</h1>
+            <p class="subtitle">
+                Sistem ini memanfaatkan computer vision untuk mendeteksi wajah dan senyuman Anda secara langsung melalui kamera.
+            </p>
+        </header>
+
+        <!-- Area Utama -->
+        <div class="main-content">
+            <!-- Tampilan Video -->
+            <div class="video-section">
+                <h2 class="video-title">
+                    <i class="fas fa-video"></i> Video Feed
+                </h2>
+
+                <div class="video-container" id="video-container">
+                    <!-- Gambar stream video dari server Flask -->
+                    <img id="video-feed" autoplay playsinline muted />
+
+                    <!-- Placeholder sebelum video dimulai -->
+                    <div class="video-placeholder">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                        <p>Klik "Start Detection" untuk memulai</p>
+                    </div>
+                </div>
+
+                <!-- Tombol kontrol -->
+                <div class="controls">
+                    <button class="btn" id="start-btn">
+                        <i class="fas fa-play"></i> Start Detection
+                    </button>
+                    <button class="btn btn-stop" id="stop-btn">
+                        <i class="fas fa-stop"></i> Stop Detection
+                    </button>
+                </div>
+            </div>
+
+            <!-- Statistik Deteksi -->
+            <div class="stats-section">
+                <h2 class="stats-title">
+                    <i class="fas fa-chart-bar"></i> Statistik Deteksi
+                </h2>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i class="fas fa-user fa-2x"></i>
+                        <div class="stat-value" id="face-count">0</div>
+                        <div class="stat-label">Wajah Terdeteksi</div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-smile fa-2x"></i>
+                        <div class="stat-value" id="smile-count">0</div>
+                        <div class="stat-label">Senyuman Terdeteksi</div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-stopwatch fa-2x"></i>
+                        <div class="stat-value" id="detection-time">0s</div>
+                        <div class="stat-label">Waktu Deteksi</div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-bolt fa-2x"></i>
+                        <div class="stat-value" id="fps-count">0</div>
+                        <div class="stat-label">FPS</div>
+                    </div>
+                </div>
+
+                <!-- Informasi tambahan -->
+                <div class="detection-info">
+                    <h3 class="info-title">
+                        <i class="fas fa-info-circle"></i> Informasi Deteksi
+                    </h3>
+                    <div class="info-content">
+                        <p>Sistem ini menggunakan algoritma Haar Cascade untuk mendeteksi wajah dan senyuman secara real-time.</p>
+                        <p>Wajah ditandai dengan kotak <span style="color: var(--primary);">biru</span>, sedangkan senyuman dengan kotak <span style="color: var(--accent);">merah muda</span>.</p>
+                        <p>Pastikan pencahayaan cukup dan wajah menghadap kamera agar hasil deteksi optimal.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Penjelasan Cara Kerja -->
+        <div class="how-it-works">
+            <h2 class="section-title">Cara Kerja Sistem</h2>
+            <div class="steps">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <h3 class="step-title">Capture Video</h3>
+                    <p class="step-description">Webcam diakses untuk mendapatkan feed video secara langsung.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <h3 class="step-title">Konversi ke Grayscale</h3>
+                    <p class="step-description">Frame dikonversi ke grayscale agar deteksi lebih cepat dan efisien.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <h3 class="step-title">Deteksi Wajah</h3>
+                    <p class="step-description">Algoritma Haar digunakan untuk menemukan wajah dalam frame.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">4</div>
+                    <h3 class="step-title">Deteksi Senyuman</h3>
+                    <p class="step-description">Dalam area wajah, sistem mencari pola senyuman menggunakan cascade khusus.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>© 2025 Face & Smile Detection System | Dibuat dengan ❤️ menggunakan OpenCV</p>
+            <p>Teknologi: Haar Cascade Classifiers • Computer Vision • Real-time Streaming</p>
+        </footer>
+    </div>
+
+    <!-- Script logika tombol dan update statistik -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const startBtn = document.getElementById('start-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            const video = document.getElementById('video-feed');
+            let detectionActive = false;
+            let statsInterval;
+
+            // Mulai deteksi
+            function startDetection() {
+                if (detectionActive) return;
+
+                video.src = "{{ url_for('video_feed') }}";
+                video.style.display = 'block';
+                document.querySelector('.video-placeholder').style.display = 'none';
+
+                // Update statistik setiap 0.5 detik
+                statsInterval = setInterval(fetchStats, 500);
+
+                detectionActive = true;
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            }
+
+            // Hentikan deteksi
+            function stopDetection() {
+                if (!detectionActive) return;
+
+                video.src = '';
+                clearInterval(statsInterval);
+                detectionActive = false;
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                video.style.display = 'none';
+                document.querySelector('.video-placeholder').style.display = 'block';
+            }
+
+            // Ambil data statistik dari server Flask
+            async function fetchStats() {
+                try {
+                    const response = await fetch('/get_stats');
+                    const stats = await response.json();
+
+                    document.getElementById('face-count').textContent = stats.face_count;
+                    document.getElementById('smile-count').textContent = stats.smile_count;
+                    document.getElementById('detection-time').textContent = `${stats.elapsed_time}s`;
+
+                    // Hitung FPS berdasarkan perubahan jumlah wajah (sederhana)
+                    if (window.lastFaceCount !== undefined) {
+                        const fps = stats.face_count - window.lastFaceCount;
+                        document.getElementById('fps-count').textContent = Math.abs(fps);
+                    }
+                    window.lastFaceCount = stats.face_count;
+                } catch (error) {
+                    console.error("Gagal mengambil statistik:", error);
+                }
+            }
+
+            // Event listeners
+            startBtn.addEventListener('click', startDetection);
+            stopBtn.addEventListener('click', stopDetection);
+        });
+    </script>
+</body>
+
+</html>
