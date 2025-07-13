@@ -1,5 +1,0 @@
-flask==2.3.2
-opencv-python==4.7.0.72
-numpy==1.24.3  # (Dependency OpenCV)
-Werkzeug==2.3.6  # (Web server Flask)
-gunicorn==20.1.0  # (Untuk deploy di production)

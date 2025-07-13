@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face & Smile Detection | Real-time</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --accent: #f72585;
+            --dark: #1d1e2c;
+            --light: #f8f9fa;
+            --success: #4cc9f0;
+            --warning: #fca311;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: var(--light);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 10% 20%, rgba(67, 97, 238, 0.1) 0%, transparent 20%),
+                        radial-gradient(circle at 80% 80%, rgba(247, 37, 133, 0.1) 0%, transparent 20%);
+            z-index: -1;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .logo {
+            font-size: 2.8rem;
+            margin-bottom: 15px;
+            color: var(--success);
+            text-shadow: 0 0 15px rgba(76, 201, 240, 0.7);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #c5c6d0;
+            max-width: 700px;
+            margin: 0 auto 30px;
+            line-height: 1.6;
+        }
+        
+        .main-content {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-bottom: 40px;
+        }
+        
+        .video-section {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(30, 30, 46, 0.7);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .video-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+            color: var(--success);
+        }
+        
+        .video-container {
+            position: relative;
+            width: 100%;
+            border-radius: 15px;
+            overflow: hidden;
+            background: #000;
+            aspect-ratio: 16/9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        #video-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+        
+        .video-placeholder {
+            text-align: center;
+            padding: 40px 20px;
+            color: #a1a1b3;
+        }
+        
+        .placeholder-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.4);
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(67, 97, 238, 0.6);
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+        }
+        
+        .btn-stop {
+            background: linear-gradient(135deg, var(--accent), #d00070);
+            box-shadow: 0 5px 15px rgba(247, 37, 133, 0.4);
+        }
+        
+        .btn-stop:hover {
+            box-shadow: 0 8px 20px rgba(247, 37, 133, 0.6);
+        }
+        
+        .stats-section {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(30, 30, 46, 0.7);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stats-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 25px;
+            font-size: 1.4rem;
+            color: var(--accent);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .stat-card {
+            background: rgba(45, 45, 70, 0.6);
+            border-radius: 15px;
+            padding: 25px 20px;
+            text-align: center;
+            transition: transform 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            background: rgba(55, 55, 90, 0.7);
+        }
+        
+        .stat-value {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 15px 0;
+            color: var(--success);
+            text-shadow: 0 0 10px rgba(76, 201, 240, 0.5);
+        }
+        
+        .stat-label {
+            color: #a1a1b3;
+            font-size: 1.1rem;
+        }
+        
+        .detection-info {
+            margin-top: 25px;
+            padding: 20px;
+            background: rgba(45, 45, 70, 0.6);
+            border-radius: 15px;
+            border-left: 4px solid var(--warning);
+        }
+        
+        .info-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: var(--warning);
+        }
+        
+        .info-content {
+            line-height: 1.7;
+            color: #c5c6d0;
+        }
+        
+        .how-it-works {
+            background: rgba(30, 30, 46, 0.7);
+            border-radius: 20px;
+            padding: 35px;
+            margin-top: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 30px;
+            color: var(--primary);
+            position: relative;
+        }
+        
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            margin: 10px auto;
+            border-radius: 2px;
+        }
+        
+        .steps {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            justify-content: center;
+        }
+        
+        .step-card {
+            flex: 1;
+            min-width: 250px;
+            max-width: 350px;
+            background: rgba(45, 45, 70, 0.6);
+            border-radius: 15px;
+            padding: 30px 25px;
+            text-align: center;
+            border-top: 4px solid var(--success);
+        }
+        
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            background: var(--success);
+            color: var(--dark);
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-radius: 50%;
+            margin-bottom: 20px;
+        }
+        
+        .step-title {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            color: var(--light);
+        }
+        
+        .step-description {
+            color: #a1a1b3;
+            line-height: 1.7;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            margin-top: 50px;
+            color: #a1a1b3;
+            font-size: 1.1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+        }
+        
+        .detection-box {
+            position: absolute;
+            border: 3px solid;
+            border-radius: 5px;
+            pointer-events: none;
+        }
+        
+        .face-box {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(67, 97, 238, 0.7);
+        }
+        
+        .smile-box {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(247, 37, 133, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-camera"></i>
+            </div>
+            <h1>Real-time Face & Smile Detection</h1>
+            <p class="subtitle">
+                Sistem deteksi wajah dan senyuman secara real-time menggunakan teknologi computer vision. 
+                Aplikasi ini akan mendeteksi wajah Anda dan menunjukkan area senyuman secara langsung melalui webcam.
+            </p>
+        </header>
+        
+        <div class="main-content">
+            <div class="video-section">
+                <h2 class="video-title">
+                    <i class="fas fa-video"></i> Video Feed
+                </h2>
+                <div class="video-container" id="video-container">
+                    <video id="video-feed" autoplay playsinline></video>
+                    <div class="video-placeholder">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                        <p>Klik "Start Detection" untuk memulai</p>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button class="btn" id="start-btn">
+                        <i class="fas fa-play"></i> Start Detection
+                    </button>
+                    <button class="btn btn-stop" id="stop-btn">
+                        <i class="fas fa-stop"></i> Stop Detection
+                    </button>
+                </div>
+            </div>
+            
+            <div class="stats-section">
+                <h2 class="stats-title">
+                    <i class="fas fa-chart-bar"></i> Detection Statistics
+                </h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i class="fas fa-user fa-2x"></i>
+                        <div class="stat-value" id="face-count">0</div>
+                        <div class="stat-label">Wajah Terdeteksi</div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-smile fa-2x"></i>
+                        <div class="stat-value" id="smile-count">0</div>
+                        <div class="stat-label">Senyuman Terdeteksi</div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-stopwatch fa-2x"></i>
+                        <div class="stat-value" id="detection-time">0s</div>
+                        <div class="stat-label">Waktu Deteksi</div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-bolt fa-2x"></i>
+                        <div class="stat-value" id="fps-count">0</div>
+                        <div class="stat-label">FPS</div>
+                    </div>
+                </div>
+                
+                <div class="detection-info">
+                    <h3 class="info-title">
+                        <i class="fas fa-info-circle"></i> Informasi Deteksi
+                    </h3>
+                    <div class="info-content">
+                        <p>Sistem menggunakan algoritma Haar Cascade untuk mendeteksi wajah dan senyuman secara real-time.</p>
+                        <p>Wajah ditandai dengan kotak <span style="color: var(--primary);">biru</span>, sedangkan senyuman ditandai dengan kotak <span style="color: var(--accent);">merah muda</span>.</p>
+                        <p>Pastikan pencahayaan cukup dan wajah menghadap kamera untuk hasil terbaik.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="how-it-works">
+            <h2 class="section-title">Cara Kerja Sistem</h2>
+            <div class="steps">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <h3 class="step-title">Capture Video</h3>
+                    <p class="step-description">Sistem mengakses webcam pengguna untuk mendapatkan video feed secara real-time.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <h3 class="step-title">Konversi ke Grayscale</h3>
+                    <p class="step-description">Frame video dikonversi ke grayscale untuk mempermudah pemrosesan citra.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <h3 class="step-title">Deteksi Wajah</h3>
+                    <p class="step-description">Algoritma Haar Cascade digunakan untuk mendeteksi wajah dalam frame.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">4</div>
+                    <h3 class="step-title">Deteksi Senyuman</h3>
+                    <p class="step-description">Di dalam area wajah, sistem mencari pola senyuman menggunakan cascade khusus.</p>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2023 Face & Smile Detection System | Dibuat dengan ❤️ menggunakan OpenCV</p>
+            <p>Teknologi: Haar Cascade Classifiers | Computer Vision | Real-time Processing</p>
+        </footer>
+    </div>
+
+    <script>
+        // Simulasi deteksi untuk demonstrasi front-end
+        document.addEventListener('DOMContentLoaded', function() {
+            const startBtn = document.getElementById('start-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            const video = document.getElementById('video-feed');
+            const videoContainer = document.getElementById('video-container');
+            const faceCount = document.getElementById('face-count');
+            const smileCount = document.getElementById('smile-count');
+            const detectionTime = document.getElementById('detection-time');
+            const fpsCount = document.getElementById('fps-count');
+            
+            let detectionActive = false;
+            let startTime = 0;
+            let frameCount = 0;
+            let animationFrame;
+            
+            // Fungsi untuk memulai deteksi (simulasi)
+            function startDetection() {
+                if (detectionActive) return;
+                
+                detectionActive = true;
+                startTime = Date.now();
+                frameCount = 0;
+                
+                // Tampilkan video feed (simulasi)
+                video.style.display = 'block';
+                document.querySelector('.video-placeholder').style.display = 'none';
+                
+                // Mulai animasi deteksi
+                simulateDetection();
+                
+                // Update tombol
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            }
+            
+            // Fungsi untuk menghentikan deteksi
+            function stopDetection() {
+                detectionActive = false;
+                cancelAnimationFrame(animationFrame);
+                
+                // Sembunyikan video feed (simulasi)
+                video.style.display = 'none';
+                document.querySelector('.video-placeholder').style.display = 'block';
+                
+                // Hapus semua kotak deteksi
+                document.querySelectorAll('.detection-box').forEach(box => box.remove());
+                
+                // Reset statistik
+                faceCount.textContent = '0';
+                smileCount.textContent = '0';
+                fpsCount.textContent = '0';
+                
+                // Update tombol
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+            
+            // Simulasi deteksi wajah dan senyuman
+            function simulateDetection() {
+                if (!detectionActive) return;
+                
+                // Hapus kotak deteksi sebelumnya
+                document.querySelectorAll('.detection-box').forEach(box => box.remove());
+                
+                // Buat kotak deteksi wajah acak (simulasi)
+                const faceBox = document.createElement('div');
+                faceBox.className = 'detection-box face-box';
+                
+                // Posisi dan ukuran acak
+                const faceX = 100 + Math.random() * 200;
+                const faceY = 50 + Math.random() * 100;
+                const faceWidth = 200 + Math.random() * 100;
+                const faceHeight = 200 + Math.random() * 100;
+                
+                faceBox.style.left = `${faceX}px`;
+                faceBox.style.top = `${faceY}px`;
+                faceBox.style.width = `${faceWidth}px`;
+                faceBox.style.height = `${faceHeight}px`;
+                
+                videoContainer.appendChild(faceBox);
+                
+                // Buat kotak deteksi senyuman di dalam wajah
+                const smileBox = document.createElement('div');
+                smileBox.className = 'detection-box smile-box';
+                
+                const smileX = faceX + faceWidth * 0.2;
+                const smileY = faceY + faceHeight * 0.7;
+                const smileWidth = faceWidth * 0.6;
+                const smileHeight = faceHeight * 0.15;
+                
+                smileBox.style.left = `${smileX}px`;
+                smileBox.style.top = `${smileY}px`;
+                smileBox.style.width = `${smileWidth}px`;
+                smileBox.style.height = `${smileHeight}px`;
+                
+                videoContainer.appendChild(smileBox);
+                
+                // Update statistik
+                faceCount.textContent = '1';
+                smileCount.textContent = '1';
+                
+                // Hitung waktu deteksi
+                const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+                detectionTime.textContent = `${elapsedTime}s`;
+                
+                // Hitung FPS
+                frameCount++;
+                const fps = Math.floor(frameCount / (elapsedTime || 1));
+                fpsCount.textContent = `${fps}`;
+                
+                // Lanjutkan animasi
+                animationFrame = requestAnimationFrame(simulateDetection);
+            }
+            
+            // Event listeners untuk tombol
+            startBtn.addEventListener('click', startDetection);
+            stopBtn.addEventListener('click', stopDetection);
+            
+            // Inisialisasi tombol stop sebagai disabled
+            stopBtn.disabled = true;
+            
+            // Simulasi akses webcam (hanya front-end)
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(function(stream) {
+                        video.srcObject = stream;
+                    })
+                    .catch(function(error) {
+                        console.error("Tidak dapat mengakses webcam:", error);
+                    });
+            }
+        });
+    </script>
+</body>
+</html>
